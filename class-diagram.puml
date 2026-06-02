@@ -1,0 +1,185 @@
+@startuml Clinic Appointment System
+!theme plain
+skinparam classBackgroundColor #FEFEF0
+skinparam classBorderColor #333333
+skinparam arrowColor #333333
+
+' ==========================================
+' Authentication Domain
+' ==========================================
+class User {
+  - id: string (PK)
+  - name: string
+  - email: string (UNIQUE)
+  - emailVerified: boolean
+  - image: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
+}
+
+class Session {
+  - id: string (PK)
+  - expiresAt: timestamp
+  - token: string (UNIQUE)
+  - createdAt: timestamp
+  - updatedAt: timestamp
+  - ipAddress: string
+  - userAgent: string
+  - userId: string (FK)
+}
+
+class Account {
+  - id: string (PK)
+  - accountId: string
+  - providerId: string
+  - userId: string (FK)
+  - accessToken: string
+  - refreshToken: string
+  - idToken: string
+  - accessTokenExpiresAt: timestamp
+  - refreshTokenExpiresAt: timestamp
+  - scope: string
+  - password: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
+}
+
+class Verification {
+  - id: string (PK)
+  - identifier: string
+  - value: string
+  - expiresAt: timestamp
+  - createdAt: timestamp
+  - updatedAt: timestamp
+}
+
+' ==========================================
+' Clinic Domain Model
+' ==========================================
+
+class Specialty {
+  - id: int (PK)
+  - name: string (UNIQUE)
+  - description: string
+  - createdAt: timestamp
+}
+
+class Doctor {
+  - id: int (PK)
+  - userId: string (FK)
+  - name: string
+  - crm: string (UNIQUE)
+  - specialtyId: int (FK)
+  - phone: string
+  - email: string
+  - active: boolean
+  - createdAt: timestamp
+  - updatedAt: timestamp
+  --
+  + getDoctors()
+  + getActiveDoctors()
+  + getDoctorById(id)
+  + createDoctor(data)
+  + updateDoctor(id, data)
+  + deleteDoctor(id)
+}
+
+class Patient {
+  - id: int (PK)
+  - userId: string (FK)
+  - name: string
+  - cpf: string (UNIQUE)
+  - birthDate: date
+  - phone: string
+  - email: string
+  - address: string
+  - healthInsurance: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
+  --
+  + getPatients()
+  + searchPatients(search)
+  + getPatientById(id)
+  + createPatient(data)
+  + updatePatient(id, data)
+  + deletePatient(id)
+}
+
+class Appointment {
+  - id: int (PK)
+  - userId: string (FK)
+  - patientId: int (FK)
+  - doctorId: int (FK)
+  - dateTime: timestamp
+  - duration: int (default: 30)
+  - status: AppointmentStatus
+  - notes: string
+  - createdAt: timestamp
+  - updatedAt: timestamp
+  --
+  + getAppointments()
+  + getAppointmentsByDate(date)
+  + getTodayAppointments()
+  + getUpcomingAppointments(limit)
+  + createAppointment(data)
+  + updateAppointment(id, data)
+  + deleteAppointment(id)
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+' ==========================================
+' Relationships / Associations
+' ==========================================
+
+' Authentication relationships
+User "1" -- "0..*" Session: owns
+User "1" -- "0..*" Account: has
+User "1" -- "0..*" Verification: uses
+
+' Clinic domain relationships
+Specialty "1" -- "0..*" Doctor: "has specialties"
+User "1" -- "0..*" Doctor: "creates/manages"
+User "1" -- "0..*" Patient: "creates/manages"
+User "1" -- "0..*" Appointment: "creates/manages"
+
+Doctor "1" -- "0..*" Appointment: "attends"
+Patient "1" -- "0..*" Appointment: "schedules"
+
+Appointment "1" -- "1" AppointmentStatus: "has status"
+
+' OOP Principles annotations
+note right of Doctor
+  **Encapsulation**: Agrupa dados
+  e comportamentos de médico
+  **Agregação**: Doctor TEM Specialty
+  **Polimorfismo**: Diferentes
+  tipos de usuários do sistema
+end note
+
+note right of Patient
+  **Abstração**: Encapsula todas as
+  informações relevantes do paciente
+end note
+
+note right of Appointment
+  **Composição**: Agendamento é
+  composto por Patient e Doctor
+  **Associação**: Relaciona
+  Patient, Doctor e Specialty
+end note
+
+note bottom of Specialty
+  **Value Object**: Entidade de
+  domínio que define especialidades
+  médicas imutáveis
+end note
+
+@enduml
